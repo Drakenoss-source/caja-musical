@@ -1,0 +1,29 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Dependencies
+node_modules/
+
+# Build / cache
+dist/
+build/
+coverage/
+.cache/
+.parcel-cache/
+.next/
+
+# Environment variables
+.env
+.env.*
+!.env.example

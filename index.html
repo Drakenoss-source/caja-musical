@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎵 Magic Sound Lab - Crea Música con Tus Manos!</title>
+    <link rel="stylesheet" href="src/styles/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Fredoka+One&display=swap" rel="stylesheet">
+    <!-- MediaPipe libs (orden importante) -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Mejorado -->
+        <header class="main-header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🎵✨</div>
+                    <h1>Magic Sound Lab</h1>
+                </div>
+                <p class="tagline">¡Crea música mágica con el movimiento de tus manos!</p>
+            </div>
+            <div class="header-decoration">
+                <div class="floating-note">♪</div>
+                <div class="floating-note">♫</div>
+                <div class="floating-note">🎶</div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Panel de Control Mejorado -->
+            <div class="control-panel">
+                <!-- Selector de Instrumentos -->
+                <div class="control-section">
+                    <h2 class="section-title">🎹 Instrumentos Mágicos</h2>
+                    <div class="instrument-grid">
+                        <div class="instrument-card" data-instrument="piano">
+                            <div class="instrument-icon">🎹</div>
+                            <span class="instrument-name">Piano Mágico</span>
+                            <div class="instrument-preview">Do Re Mi</div>
+                        </div>
+                        <div class="instrument-card" data-instrument="harp">
+                            <div class="instrument-icon">🎵</div>
+                            <span class="instrument-name">Arpa de Hadas</span>
+                            <div class="instrument-preview">Ting Ting</div>
+                        </div>
+                        <div class="instrument-card" data-instrument="synth">
+                            <div class="instrument-icon">🔊</div>
+                            <span class="instrument-name">Sintetizador Espacial</span>
+                            <div class="instrument-preview">Wooosh</div>
+                        </div>
+                        <div class="instrument-card" data-instrument="guitar">
+                            <div class="instrument-icon">🎸</div>
+                            <span class="instrument-name">Guitarra Rock</span>
+                            <div class="instrument-preview">Strum</div>
+                        </div>
+                        <div class="instrument-card" data-instrument="drums">
+                            <div class="instrument-icon">🥁</div>
+                            <span class="instrument-name">Batería Divertida</span>
+                            <div class="instrument-preview">Boom Tap</div>
+                        </div>
+                        <div class="instrument-card" data-instrument="xylophone">
+                            <div class="instrument-icon">🎼</div>
+                            <span class="instrument-name">Xilófono Colorido</span>
+                            <div class="instrument-preview">Ding Dong</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ajustes Divertidos -->
+                <div class="control-section">
+                    <h2 class="section-title">⚙️ Ajustes Divertidos</h2>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="volume" class="setting-label">
+                                <span class="setting-emoji">🔊</span>
+                                Volumen
+                            </label>
+                            <input type="range" id="volume" class="fun-slider" min="0" max="100" value="70">
+                            <div class="setting-value" id="volume-value">70%</div>
+                        </div>
+                        <div class="setting-item">
+                            <label for="sensitivity" class="setting-label">
+                                <span class="setting-emoji">⚡</span>
+                                Velocidad Mágica
+                            </label>
+                            <input type="range" id="sensitivity" class="fun-slider" min="1" max="10" value="5">
+                            <div class="setting-value" id="sensitivity-value">5</div>
+                        </div>
+                        <div class="setting-item">
+                            <label for="effects" class="setting-label">
+                                <span class="setting-emoji">🌈</span>
+                                Efectos Especiales
+                            </label>
+                            <select id="effects" class="fun-select">
+                                <option value="none">Sin efectos</option>
+                                <option value="echo">Eco Mágico</option>
+                                <option value="reverb">Reverb Espacial</option>
+                                <option value="chorus">Coro de Hadas</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guía de Gestos Mejorada -->
+                <div class="control-section">
+                    <h2 class="section-title">👐 Cómo Jugar</h2>
+                    <div class="gesture-guide">
+                        <div class="gesture-item">
+                            <div class="gesture-emoji">👆</div>
+                            <div class="gesture-info">
+                                <strong>Dedo Índice</strong>
+                                <span>Notas Alegres 🎵</span>
+                            </div>
+                        </div>
+                        <div class="gesture-item">
+                            <div class="gesture-emoji">✌️</div>
+                            <div class="gesture-info">
+                                <strong>Dedo Medio</strong>
+                                <span>Notas Mágicas ✨</span>
+                            </div>
+                        </div>
+                        <div class="gesture-item">
+                            <div class="gesture-emoji">🤟</div>
+                            <div class="gesture-info">
+                                <strong>Dedo Anular</strong>
+                                <span>Notas Profundas 🎶</span>
+                            </div>
+                        </div>
+                        <div class="gesture-item">
+                            <div class="gesture-emoji">🤏</div>
+                            <div class="gesture-info">
+                                <strong>Pinza Mágica</strong>
+                                <span>Efectos Especiales 🌈</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="action-buttons">
+                    <button class="action-btn camera-btn" id="startBtn">
+                        <span class="btn-emoji">📹</span>
+                        Iniciar Cámara
+                    </button>
+                    <button class="action-btn camera-btn" id="stopBtn" disabled>
+                        <span class="btn-emoji">⏹️</span>
+                        Detener Cámara
+                    </button>
+                    <button class="action-btn record-btn" id="record-btn">
+                        <span class="btn-emoji">⏺️</span>
+                        Grabar Canción
+                    </button>
+                    <button class="action-btn clear-btn" id="clear-btn">
+                        <span class="btn-emoji">🧹</span>
+                        Limpiar Todo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sección de Cámara Mejorada -->
+            <div class="camera-section">
+                <div class="camera-header">
+                    <h2>🎥 Tu Estudio Mágico</h2>
+                    <div class="camera-indicator" id="camera-status">
+                        <div class="status-dot"></div>
+                        <span>Cámara Activada</span>
+                    </div>
+                </div>
+                
+                <div class="camera-container">
+                    <div class="camera-frame">
+                        <video id="input_video" class="input_video" autoplay muted playsinline></video>
+                        <canvas id="output_canvas" class="output_canvas" width="640" height="480"></canvas>
+                    </div>
+                </div>
+
+                <div class="feedback-panel">
+                    <div class="current-action" id="current-action">
+                        <div class="action-emoji">🎵</div>
+                        <div class="action-text">Esperando tu magia...</div>
+                    </div>
+                    <div class="sound-bars">
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visualizador Mejorado -->
+        <div class="visualizer-section">
+            <h2 class="section-title">🌈 Olas de Sonido Mágicas</h2>
+            <div class="visualizer-container">
+                <canvas id="audioVisualizer"></canvas>
+                <div class="visualizer-effects">
+                    <div class="pulse"></div>
+                    <div class="pulse"></div>
+                    <div class="pulse"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Divertido -->
+        <footer class="fun-footer">
+            <div class="footer-content">
+                <p>¡Creado con 💙 para todas las edades! | Magic Sound Lab 🎵</p>
+                <div class="footer-emojis">
+                    <span>🎹</span>
+                    <span>🎸</span>
+                    <span>🥁</span>
+                    <span>🎵</span>
+                    <span>✨</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Audio Context para iOS -->
+    <script src="https://unpkg.com/ios-audio-context"></script>
+    
+    <script src="src/scripts/soundinstrument.js"></script>
+    <script src="src/scripts/app.js"></script>
+</body>
+</html>
