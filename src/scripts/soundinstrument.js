@@ -99,33 +99,54 @@ class SoundInstrument {
 
     ensureAudioContext() {
         if (!this.audioContext) {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (typeof AudioContextClass !== 'function') {
+                throw new Error('Web Audio API no disponible en este navegador.');
+            }
+            this.audioContext = new AudioContextClass();
         }
         if (this.audioContext.state === 'suspended') {
-            this.audioContext.resume();
+            const resumed = this.audioContext.resume();
+            if (resumed && typeof resumed.catch === 'function') {
+                resumed.catch((error) => {
+                    console.error('No se pudo reanudar el contexto de audio:', error);
+                });
+            }
         }
+        return this.audioContext;
     }
 
     setVolume(volumeValue) {
         const normalized = Number(volumeValue) / 100;
+        if (!Number.isFinite(normalized)) {
+            throw new TypeError(`Volumen invalido: ${volumeValue}`);
+        }
         this.volume = Math.max(0, Math.min(1, normalized));
     }
 
     setInstrument(instrumentName) {
-        if (this.instruments[instrumentName]) {
-            this.currentInstrument = instrumentName;
+        if (!this.instruments[instrumentName]) {
+            throw new Error(`Instrumento desconocido: ${instrumentName}`);
         }
+        this.currentInstrument = instrumentName;
     }
 
     playNote(gesture, volumeOverride) {
         const instrument = this.instruments[this.currentInstrument];
-        if (!instrument) return;
+        if (!instrument) {
+            throw new Error(`Instrumento actual no configurado: ${this.currentInstrument}`);
+        }
 
         const notes = instrument.gestures[gesture];
-        if (!notes || notes.length === 0) return;
+        if (!notes || notes.length === 0) {
+            console.warn(`Gesto sin notas asignadas (${this.currentInstrument}): ${gesture}`);
+            return false;
+        }
 
         this.ensureAudioContext();
-        const volume = typeof volumeOverride === 'number' ? volumeOverride : this.volume;
+        const volume = typeof volumeOverride === 'number' && Number.isFinite(volumeOverride)
+            ? volumeOverride
+            : this.volume;
         const safeVolume = Math.max(0, Math.min(1, volume));
         const now = this.audioContext.currentTime;
         const step = 0.09;
@@ -133,7 +154,10 @@ class SoundInstrument {
 
         notes.forEach((noteName, index) => {
             const freq = this.notes[noteName];
-            if (!freq) return;
+            if (!freq) {
+                console.warn(`Nota desconocida ignorada: ${noteName}`);
+                return;
+            }
 
             const osc = this.audioContext.createOscillator();
             const gain = this.audioContext.createGain();
@@ -151,6 +175,8 @@ class SoundInstrument {
             osc.start(start);
             osc.stop(end);
         });
+
+        return true;
     }
 
     stop() {
