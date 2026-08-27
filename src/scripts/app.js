@@ -5,9 +5,6 @@ const stopBtn = document.getElementById('stopBtn');
 const statusElement = document.getElementById('current-action');
 const volumeControl = document.getElementById('volume');
 const sensitivityControl = document.getElementById('sensitivity');
-const effectsControl = document.getElementById('effects');
-const recordBtn = document.getElementById('record-btn');
-const clearBtn = document.getElementById('clear-btn');
 const cameraStatus = document.getElementById('camera-status');
 
 let soundInstrument = null;
@@ -15,7 +12,6 @@ const ctx = outputElement ? outputElement.getContext('2d') : null;
 let camera = null;
 let hands = null;
 let cameraActive = false;
-let isRecording = false;
 let gestureCooldown = 500;
 const lastGestures = {};
 const reportedErrors = new Set();
@@ -247,14 +243,7 @@ function stopCamera() {
     } catch (error) {
         failure = error;
     }
-
-    try {
-        if (soundInstrument) {
-            soundInstrument.stop();
-        }
-    } catch (error) {
-        failure = failure || error;
-    }
+    camera = null;
 
     startBtn.disabled = false;
     stopBtn.disabled = true;
@@ -305,33 +294,6 @@ function selectInstrument(instrument, card) {
     updateStatus(`Instrumento seleccionado: ${name ? name.textContent : instrument}`);
 }
 
-function toggleRecording() {
-    isRecording = !isRecording;
-    if (!recordBtn) return;
-
-    if (isRecording) {
-        recordBtn.innerHTML = '<span class="btn-emoji">⏹️</span> Parar Grabación';
-        recordBtn.style.background = 'linear-gradient(135deg, #FF6B8B, #FF8E53)';
-        updateStatus('Grabando tu canción mágica...');
-    } else {
-        recordBtn.innerHTML = '<span class="btn-emoji">⏺️</span> Grabar Canción';
-        recordBtn.style.background = 'linear-gradient(135deg, var(--success), #04A57D)';
-        updateStatus('Grabación detenida.');
-    }
-}
-
-function clearAll() {
-    try {
-        if (soundInstrument) {
-            soundInstrument.stopAllSounds();
-        }
-    } catch (error) {
-        reportError('clearAll', error, 'Error al limpiar los sonidos. Revisa la consola.');
-        return;
-    }
-    updateStatus('Todo limpiado. Listo para nueva magia.');
-}
-
 function setupUIEvents() {
     document.querySelectorAll('.instrument-card').forEach((card, index) => {
         card.addEventListener('click', () => selectInstrument(card.dataset.instrument, card));
@@ -363,21 +325,12 @@ function setupUIEvents() {
         });
     }
 
-    if (effectsControl) {
-        effectsControl.addEventListener('change', (e) => {
-            const option = e.target.options[e.target.selectedIndex];
-            updateStatus(`Efecto seleccionado: ${option ? option.text : e.target.value}`);
-        });
-    }
-
     startBtn.addEventListener('click', () => {
         startCamera().catch((error) => {
             reportError('startCamera', error, 'Error inesperado al iniciar la cámara.');
         });
     });
     stopBtn.addEventListener('click', stopCamera);
-    if (recordBtn) recordBtn.addEventListener('click', toggleRecording);
-    if (clearBtn) clearBtn.addEventListener('click', clearAll);
 }
 
 if (typeof HAND_CONNECTIONS === 'undefined') {
@@ -433,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupUIEvents();
     setCameraIndicator(false);
-    if (hands) {
+    if (hands && soundInstrument) {
         updateStatus("Listo para comenzar. Haz clic en 'Iniciar Cámara'.");
     }
 });

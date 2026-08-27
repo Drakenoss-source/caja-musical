@@ -223,16 +223,6 @@ body {
     color: var(--accent);
 }
 
-.fun-select {
-    width: 100%;
-    padding: 10px;
-    border-radius: 8px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    font-family: inherit;
-}
-
 /* Guía de Gestos */
 .gesture-guide {
     display: flex;
@@ -294,16 +284,6 @@ body {
     justify-content: center;
     gap: 8px;
     font-size: 0.9rem;
-}
-
-.record-btn {
-    background: linear-gradient(135deg, var(--success), #04A57D);
-    color: white;
-}
-
-.clear-btn {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
 }
 
 .action-btn:hover {
@@ -376,37 +356,6 @@ body {
     left: 0;
 }
 
-.camera-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.3);
-    color: white;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.camera-frame:hover .camera-overlay {
-    opacity: 1;
-}
-
-.overlay-text {
-    font-size: 1.2rem;
-    margin-bottom: 10px;
-    font-weight: 700;
-}
-
-.hand-animation {
-    font-size: 3rem;
-    animation: wave 2s infinite;
-}
-
 /* Panel de Feedback */
 .feedback-panel {
     margin-top: 20px;
@@ -455,58 +404,6 @@ body {
 .bar:nth-child(4) { animation-delay: 0.6s; height: 15px; }
 .bar:nth-child(5) { animation-delay: 0.8s; height: 10px; }
 
-/* Visualizador Mejorado */
-.visualizer-section {
-    margin-top: 20px;
-}
-
-.visualizer-container {
-    position: relative;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 20px;
-    padding: 20px;
-    overflow: hidden;
-}
-
-#audioVisualizer {
-    width: 100%;
-    height: 150px;
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.5);
-}
-
-.visualizer-effects {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-}
-
-.pulse {
-    position: absolute;
-    border: 2px solid var(--accent);
-    border-radius: 50%;
-    animation: ripple 3s infinite linear;
-}
-
-.pulse:nth-child(1) {
-    top: 50%;
-    left: 25%;
-    animation-delay: 0s;
-}
-.pulse:nth-child(2) {
-    top: 30%;
-    left: 50%;
-    animation-delay: 1s;
-}
-.pulse:nth-child(3) {
-    top: 70%;
-    left: 75%;
-    animation-delay: 2s;
-}
-
 /* Footer Divertido */
 .fun-footer {
     margin-top: 30px;
@@ -539,12 +436,6 @@ body {
     50% { transform: translateY(-20px) rotate(10deg); }
 }
 
-@keyframes wave {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(10deg); }
-    75% { transform: rotate(-10deg); }
-}
-
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
@@ -553,19 +444,6 @@ body {
 @keyframes soundBar {
     0%, 100% { transform: scaleY(0.5); }
     50% { transform: scaleY(1); }
-}
-
-@keyframes ripple {
-    0% {
-        width: 0;
-        height: 0;
-        opacity: 1;
-    }
-    100% {
-        width: 100px;
-        height: 100px;
-        opacity: 0;
-    }
 }
 
 /* Responsive */

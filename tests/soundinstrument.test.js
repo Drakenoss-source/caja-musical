@@ -77,6 +77,13 @@ describe('setVolume', () => {
         instrument.setVolume(-500);
         expect(instrument.volume).toBe(0);
     });
+
+    it('rejects values that are not numbers', () => {
+        const instrument = new SoundInstrument();
+
+        expect(() => instrument.setVolume('mucho')).toThrow(TypeError);
+        expect(instrument.volume).toBe(0.7);
+    });
 });
 
 describe('setInstrument', () => {
@@ -86,9 +93,10 @@ describe('setInstrument', () => {
         expect(instrument.currentInstrument).toBe('drums');
     });
 
-    it('ignores unknown instruments', () => {
+    it('rejects unknown instruments', () => {
         const instrument = new SoundInstrument();
-        instrument.setInstrument('kazoo');
+
+        expect(() => instrument.setInstrument('kazoo')).toThrow('Instrumento desconocido: kazoo');
         expect(instrument.currentInstrument).toBe('piano');
     });
 });
@@ -128,6 +136,28 @@ describe('ensureAudioContext', () => {
 
         expect(context.resume).toHaveBeenCalledTimes(1);
         expect(context.state).toBe('running');
+    });
+
+    it('reports a failed resume without rejecting', async () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const { context } = createAudioContextStub({ state: 'suspended' });
+        context.resume = vi.fn(() => Promise.reject(new Error('bloqueado')));
+        window.AudioContext = audioContextConstructor(context);
+
+        const instrument = new SoundInstrument();
+        expect(() => instrument.ensureAudioContext()).not.toThrow();
+        await Promise.resolve();
+
+        expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('throws when the browser has no Web Audio API', () => {
+        window.AudioContext = undefined;
+        window.webkitAudioContext = undefined;
+
+        const instrument = new SoundInstrument();
+
+        expect(() => instrument.ensureAudioContext()).toThrow('Web Audio API no disponible');
     });
 });
 
@@ -204,36 +234,41 @@ describe('playNote', () => {
         stub.oscillators.forEach((osc) => expect(osc.type).toBe('sawtooth'));
     });
 
-    it('does nothing for an unknown gesture', () => {
+    it('warns and reports failure for an unknown gesture', () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const instrument = new SoundInstrument();
-        instrument.playNote('moonwalk');
 
+        expect(instrument.playNote('moonwalk')).toBe(false);
+        expect(warnSpy).toHaveBeenCalled();
         expect(window.AudioContext).not.toHaveBeenCalled();
         expect(stub.oscillators).toHaveLength(0);
     });
 
-    it('does nothing when the current instrument is missing', () => {
+    it('throws when the current instrument is missing', () => {
         const instrument = new SoundInstrument();
         instrument.currentInstrument = 'kazoo';
-        instrument.playNote('fist');
 
+        expect(() => instrument.playNote('fist')).toThrow('Instrumento actual no configurado');
         expect(window.AudioContext).not.toHaveBeenCalled();
     });
 
-    it('does nothing when the gesture chord is empty', () => {
+    it('reports failure when the gesture chord is empty', () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
         const instrument = new SoundInstrument();
         instrument.instruments.piano.gestures.fist = [];
-        instrument.playNote('fist');
 
+        expect(instrument.playNote('fist')).toBe(false);
         expect(window.AudioContext).not.toHaveBeenCalled();
     });
 
     it('skips notes without a known frequency', () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const instrument = new SoundInstrument();
         instrument.instruments.piano.gestures.fist = ['C4', 'Z9'];
-        instrument.playNote('fist');
 
+        expect(instrument.playNote('fist')).toBe(true);
         expect(stub.oscillators).toHaveLength(1);
+        expect(warnSpy).toHaveBeenCalled();
     });
 
     it('creates the audio context on first play', () => {
@@ -245,12 +280,3 @@ describe('playNote', () => {
     });
 });
 
-describe('stop helpers', () => {
-    it('stop and stopAllSounds are safe no-ops', () => {
-        const instrument = new SoundInstrument();
-        const stopSpy = vi.spyOn(instrument, 'stop');
-
-        expect(() => instrument.stopAllSounds()).not.toThrow();
-        expect(stopSpy).toHaveBeenCalledTimes(1);
-    });
-});

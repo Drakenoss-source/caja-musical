@@ -89,18 +89,6 @@
                             <input type="range" id="sensitivity" class="fun-slider" min="1" max="10" value="5">
                             <div class="setting-value" id="sensitivity-value">5</div>
                         </div>
-                        <div class="setting-item">
-                            <label for="effects" class="setting-label">
-                                <span class="setting-emoji">🌈</span>
-                                Efectos Especiales
-                            </label>
-                            <select id="effects" class="fun-select">
-                                <option value="none">Sin efectos</option>
-                                <option value="echo">Eco Mágico</option>
-                                <option value="reverb">Reverb Espacial</option>
-                                <option value="chorus">Coro de Hadas</option>
-                            </select>
-                        </div>
                     </div>
                 </div>
 
@@ -109,31 +97,38 @@
                     <h2 class="section-title">👐 Cómo Jugar</h2>
                     <div class="gesture-guide">
                         <div class="gesture-item">
-                            <div class="gesture-emoji">👆</div>
+                            <div class="gesture-emoji">✊</div>
                             <div class="gesture-info">
-                                <strong>Dedo Índice</strong>
-                                <span>Notas Alegres 🎵</span>
+                                <strong>Puño Cerrado</strong>
+                                <span>Acorde Base 🎵</span>
+                            </div>
+                        </div>
+                        <div class="gesture-item">
+                            <div class="gesture-emoji">🖐️</div>
+                            <div class="gesture-info">
+                                <strong>Mano Abierta</strong>
+                                <span>Notas Alegres ✨</span>
                             </div>
                         </div>
                         <div class="gesture-item">
                             <div class="gesture-emoji">✌️</div>
                             <div class="gesture-info">
-                                <strong>Dedo Medio</strong>
-                                <span>Notas Mágicas ✨</span>
+                                <strong>Paz y Amor</strong>
+                                <span>Notas Mágicas 🌟</span>
                             </div>
                         </div>
                         <div class="gesture-item">
-                            <div class="gesture-emoji">🤟</div>
+                            <div class="gesture-emoji">👍</div>
                             <div class="gesture-info">
-                                <strong>Dedo Anular</strong>
+                                <strong>Pulgar Arriba</strong>
                                 <span>Notas Profundas 🎶</span>
                             </div>
                         </div>
                         <div class="gesture-item">
-                            <div class="gesture-emoji">🤏</div>
+                            <div class="gesture-emoji">👆</div>
                             <div class="gesture-info">
-                                <strong>Pinza Mágica</strong>
-                                <span>Efectos Especiales 🌈</span>
+                                <strong>Señalar</strong>
+                                <span>Notas Brillantes 🌈</span>
                             </div>
                         </div>
                     </div>
@@ -148,14 +143,6 @@
                     <button class="action-btn camera-btn" id="stopBtn" disabled>
                         <span class="btn-emoji">⏹️</span>
                         Detener Cámara
-                    </button>
-                    <button class="action-btn record-btn" id="record-btn">
-                        <span class="btn-emoji">⏺️</span>
-                        Grabar Canción
-                    </button>
-                    <button class="action-btn clear-btn" id="clear-btn">
-                        <span class="btn-emoji">🧹</span>
-                        Limpiar Todo
                     </button>
                 </div>
             </div>
@@ -193,19 +180,6 @@
             </div>
         </div>
 
-        <!-- Visualizador Mejorado -->
-        <div class="visualizer-section">
-            <h2 class="section-title">🌈 Olas de Sonido Mágicas</h2>
-            <div class="visualizer-container">
-                <canvas id="audioVisualizer"></canvas>
-                <div class="visualizer-effects">
-                    <div class="pulse"></div>
-                    <div class="pulse"></div>
-                    <div class="pulse"></div>
-                </div>
-            </div>
-        </div>
-
         <!-- Footer Divertido -->
         <footer class="fun-footer">
             <div class="footer-content">
@@ -221,9 +195,6 @@
         </footer>
     </div>
 
-    <!-- Audio Context para iOS -->
-    <script src="https://unpkg.com/ios-audio-context"></script>
-    
     <script src="src/scripts/soundinstrument.js"></script>
     <script src="src/scripts/app.js"></script>
 </body>
