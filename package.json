@@ -1,0 +1,19 @@
+{
+  "name": "caja-musical",
+  "version": "1.0.0",
+  "description": "Aplicacion web interactiva para crear musica con gestos de manos usando MediaPipe Hands y Web Audio API.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.11",
+    "jsdom": "^26.1.0",
+    "vitest": "^4.1.11"
+  }
+}
