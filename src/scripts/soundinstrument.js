@@ -178,14 +178,6 @@ class SoundInstrument {
 
         return true;
     }
-
-    stop() {
-        // Los osciladores se apagan por nota; no hay buffer persistente que limpiar.
-    }
-
-    stopAllSounds() {
-        this.stop();
-    }
 }
 
 window.SoundInstrument = SoundInstrument;

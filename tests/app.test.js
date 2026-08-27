@@ -21,9 +21,7 @@ function createSoundInstrumentStub() {
     return {
         setVolume: vi.fn(),
         setInstrument: vi.fn(),
-        playNote: vi.fn(),
-        stop: vi.fn(),
-        stopAllSounds: vi.fn()
+        playNote: vi.fn()
     };
 }
 
@@ -161,13 +159,38 @@ describe('bootstrap', () => {
         delete window.HAND_CONNECTIONS;
     });
 
-    it('does nothing when the required elements are missing', async () => {
+    it('reports missing required elements instead of failing silently', async () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         document.body.innerHTML = '';
 
         await bootstrapApp();
 
         expect(SoundInstrumentMock).not.toHaveBeenCalled();
         expect(HandsMock).not.toHaveBeenCalled();
+        expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('reports a missing MediaPipe library and blocks the start button', async () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        delete window.Hands;
+
+        await bootstrapApp();
+
+        expect(errorSpy).toHaveBeenCalled();
+        expect(el('startBtn').disabled).toBe(true);
+        expect(actionText()).toContain('no se pudo iniciar la deteccion de manos');
+    });
+
+    it('keeps the audio failure message visible instead of announcing it is ready', async () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        SoundInstrumentMock.mockImplementation(function SoundInstrument() {
+            throw new Error('sin audio');
+        });
+
+        await bootstrapApp();
+
+        expect(errorSpy).toHaveBeenCalled();
+        expect(actionText()).toBe('Error: no se pudo iniciar el motor de audio.');
     });
 });
 
@@ -345,13 +368,12 @@ describe('camera control', () => {
         expect(handsInstance.send).not.toHaveBeenCalled();
     });
 
-    it('stops the camera and silences the instrument', async () => {
+    it('stops the camera and restores the controls', async () => {
         await startCamera();
 
         stopCamera();
 
         expect(cameraInstance.stop).toHaveBeenCalledTimes(1);
-        expect(sound.stop).toHaveBeenCalledTimes(1);
         expect(el('startBtn').disabled).toBe(false);
         expect(el('stopBtn').disabled).toBe(true);
         expect(cameraLabel()).toBe('Cámara Detenida');
@@ -362,10 +384,9 @@ describe('camera control', () => {
         stopCamera();
 
         expect(actionText()).toBe('Cámara detenida.');
-        expect(sound.stop).toHaveBeenCalledTimes(1);
     });
 
-    it('logs but does not rethrow when stopping the camera fails', async () => {
+    it('reports a failed stop and still restores the controls', async () => {
         const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         await startCamera();
         cameraInstance.stop.mockImplementation(() => {
@@ -374,6 +395,9 @@ describe('camera control', () => {
 
         expect(() => stopCamera()).not.toThrow();
         expect(errorSpy).toHaveBeenCalled();
+        expect(actionText()).toBe('Cámara detenida con errores. Revisa la consola.');
+        expect(el('startBtn').disabled).toBe(false);
+        expect(el('stopBtn').disabled).toBe(true);
     });
 
     it('skips a camera object without a stop method', async () => {
@@ -394,9 +418,21 @@ describe('camera control', () => {
         await startCamera();
 
         expect(errorSpy).toHaveBeenCalled();
-        expect(actionText()).toBe('Error: No se pudo acceder a la cámara.');
+        expect(actionText()).toBe('Error: No se pudo acceder a la cámara (denied).');
         expect(cameraLabel()).toBe('Cámara Detenida');
         expect(el('startBtn').disabled).toBe(false);
+        expect(el('stopBtn').disabled).toBe(true);
+    });
+
+    it('reports a frame that MediaPipe could not process', async () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        await startCamera();
+        handsInstance.send.mockRejectedValue(new Error('modelo caido'));
+
+        await CameraMock.mock.calls[0][1].onFrame();
+
+        expect(errorSpy).toHaveBeenCalled();
+        expect(actionText()).toBe('Error al procesar el video de la camara. Revisa la consola.');
     });
 });
 
@@ -414,6 +450,21 @@ describe('instrument selection', () => {
         expect(sound.setInstrument).toHaveBeenCalledWith('guitar');
         expect(cards.filter((card) => card.classList.contains('active'))).toEqual([target]);
         expect(actionText()).toBe('Instrumento seleccionado: Guitarra Rock');
+    });
+
+    it('does not activate a card the sound engine rejects', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const cards = [...document.querySelectorAll('.instrument-card')];
+        sound.setInstrument.mockImplementation(() => {
+            throw new Error('Instrumento desconocido: kazoo');
+        });
+
+        cards[3].click();
+
+        expect(errorSpy).toHaveBeenCalled();
+        expect(cards[3].classList.contains('active')).toBe(false);
+        expect(cards.filter((card) => card.classList.contains('active'))).toEqual([cards[0]]);
+        expect(actionText()).toBe('Error: instrumento no disponible (guitar).');
     });
 
     it('offers every instrument of the sound engine', () => {
@@ -440,38 +491,17 @@ describe('settings', () => {
         expect(el('volume-value').textContent).toBe('25%');
     });
 
-    it('reports the selected effect', () => {
-        const select = el('effects');
-        select.value = 'reverb';
+    it('reports a volume the engine rejects', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const slider = el('volume');
+        sound.setVolume.mockImplementation(() => {
+            throw new TypeError('Volumen invalido');
+        });
 
-        dispatch(select, 'change');
+        dispatch(slider, 'input');
 
-        expect(actionText()).toBe('Efecto seleccionado: Reverb Espacial');
-    });
-});
-
-describe('recording and clearing', () => {
-    beforeEach(async () => {
-        await bootstrapApp();
-    });
-
-    it('toggles the record button between both states', () => {
-        const button = el('record-btn');
-
-        button.click();
-        expect(button.textContent).toContain('Parar Grabación');
-        expect(actionText()).toBe('Grabando tu canción mágica...');
-
-        button.click();
-        expect(button.textContent).toContain('Grabar Canción');
-        expect(actionText()).toBe('Grabación detenida.');
-    });
-
-    it('silences all sounds when clearing', () => {
-        el('clear-btn').click();
-
-        expect(sound.stopAllSounds).toHaveBeenCalledTimes(1);
-        expect(actionText()).toBe('Todo limpiado. Listo para nueva magia.');
+        expect(errorSpy).toHaveBeenCalled();
+        expect(actionText()).toBe('Error: volumen invalido.');
     });
 });
 
@@ -480,9 +510,11 @@ describe('status panel', () => {
         await bootstrapApp();
         el('current-action').innerHTML = '';
 
-        el('clear-btn').click();
+        document.querySelectorAll('.instrument-card')[1].click();
 
-        expect(el('current-action').textContent).toBe('Todo limpiado. Listo para nueva magia.');
+        expect(el('current-action').textContent).toBe(
+            'Instrumento seleccionado: Arpa de Hadas'
+        );
     });
 
     it('survives a missing camera indicator', async () => {
