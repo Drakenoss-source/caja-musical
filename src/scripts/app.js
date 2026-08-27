@@ -18,8 +18,26 @@ let cameraActive = false;
 let isRecording = false;
 let gestureCooldown = 500;
 const lastGestures = {};
+const reportedErrors = new Set();
+
+function reportError(context, error, userMessage) {
+    console.error(`[${context}]`, error);
+    if (userMessage) {
+        updateStatus(userMessage);
+    }
+}
+
+function reportErrorOnce(context, error, userMessage) {
+    if (reportedErrors.has(context)) return;
+    reportedErrors.add(context);
+    reportError(context, error, userMessage);
+}
 
 function initializeHands() {
+    if (typeof Hands !== 'function') {
+        throw new Error('MediaPipe Hands no se cargo (revisa la conexion o el bloqueo del CDN).');
+    }
+
     hands = new Hands({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
     });
@@ -35,6 +53,18 @@ function initializeHands() {
 
 function onHandResults(results) {
     if (!ctx || !outputElement) return;
+    try {
+        renderHandResults(results);
+    } catch (error) {
+        reportErrorOnce(
+            'onHandResults',
+            error,
+            'Error al dibujar la deteccion de manos. Revisa la consola.'
+        );
+    }
+}
+
+function renderHandResults(results) {
     ctx.save();
     ctx.clearRect(0, 0, outputElement.width, outputElement.height);
     ctx.drawImage(results.image, 0, 0, outputElement.width, outputElement.height);
@@ -44,8 +74,16 @@ function onHandResults(results) {
             const colors = ['#00FF00', '#FF66C4'];
             const color = colors[handIndex % colors.length];
 
-            drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color, lineWidth: 2 });
-            drawLandmarks(ctx, landmarks, { color, lineWidth: 1, radius: 3 });
+            if (typeof drawConnectors === 'function' && typeof drawLandmarks === 'function') {
+                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color, lineWidth: 2 });
+                drawLandmarks(ctx, landmarks, { color, lineWidth: 1, radius: 3 });
+            } else {
+                reportErrorOnce(
+                    'drawing_utils',
+                    new Error('MediaPipe drawing_utils no se cargo.'),
+                    'No se pudo cargar el dibujo de manos, pero el sonido sigue activo.'
+                );
+            }
             detectGesture(landmarks, handIndex);
         });
     }
@@ -69,7 +107,17 @@ function detectGesture(landmarks, handIndex) {
     else if (isPointing(landmarks)) gesture = 'pointing';
 
     if (gesture && gesture !== lastGestures[handKey].gesture && soundInstrument) {
-        soundInstrument.playNote(gesture, Number(volumeControl.value) / 100);
+        const volume = volumeControl ? Number(volumeControl.value) / 100 : undefined;
+        try {
+            soundInstrument.playNote(gesture, volume);
+        } catch (error) {
+            reportErrorOnce(
+                'playNote',
+                error,
+                'No se pudo reproducir el sonido. Haz clic en la pagina para activar el audio.'
+            );
+            return;
+        }
         lastGestures[handKey] = { gesture, time: now };
         updateStatus(`Gesto detectado (Mano ${handIndex + 1}): ${getGestureName(gesture)}`);
     }
@@ -138,15 +186,35 @@ function getGestureName(gesture) {
 }
 
 async function startCamera() {
-    if (!cameraElement || !hands) return;
+    if (!cameraElement) return;
+    if (!hands) {
+        updateStatus('Error: la deteccion de manos no esta disponible.');
+        return;
+    }
+    if (typeof Camera !== 'function') {
+        reportError(
+            'startCamera',
+            new Error('MediaPipe camera_utils no se cargo.'),
+            'Error: no se pudo cargar la libreria de camara.'
+        );
+        return;
+    }
+
     try {
         updateStatus('Iniciando cámara...');
         cameraActive = true;
 
         camera = new Camera(cameraElement, {
             onFrame: async () => {
-                if (cameraActive) {
+                if (!cameraActive) return;
+                try {
                     await hands.send({ image: cameraElement });
+                } catch (error) {
+                    reportErrorOnce(
+                        'hands.send',
+                        error,
+                        'Error al procesar el video de la camara. Revisa la consola.'
+                    );
                 }
             },
             width: 640,
@@ -159,28 +227,44 @@ async function startCamera() {
         setCameraIndicator(true);
         updateStatus('Cámara activa - Realiza gestos con ambas manos');
     } catch (error) {
-        console.error('Error al iniciar cámara:', error);
+        cameraActive = false;
+        camera = null;
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
         setCameraIndicator(false);
-        updateStatus('Error: No se pudo acceder a la cámara.');
+        reportError('startCamera', error, `Error: No se pudo acceder a la cámara (${error.message}).`);
     }
 }
 
 function stopCamera() {
+    cameraActive = false;
+    let failure = null;
+
     try {
-        cameraActive = false;
         if (camera && typeof camera.stop === 'function') {
             camera.stop();
         }
+    } catch (error) {
+        failure = error;
+    }
+
+    try {
         if (soundInstrument) {
             soundInstrument.stop();
         }
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-        setCameraIndicator(false);
-        updateStatus('Cámara detenida.');
     } catch (error) {
-        console.error('stopCamera error:', error);
+        failure = failure || error;
     }
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    setCameraIndicator(false);
+
+    if (failure) {
+        reportError('stopCamera', failure, 'Cámara detenida con errores. Revisa la consola.');
+        return;
+    }
+    updateStatus('Cámara detenida.');
 }
 
 function updateStatus(message) {
@@ -203,10 +287,22 @@ function setCameraIndicator(isActive) {
 }
 
 function selectInstrument(instrument, card) {
+    if (!soundInstrument) {
+        updateStatus('Error: el motor de audio no esta disponible.');
+        return;
+    }
+
+    try {
+        soundInstrument.setInstrument(instrument);
+    } catch (error) {
+        reportError('selectInstrument', error, `Error: instrumento no disponible (${instrument}).`);
+        return;
+    }
+
     document.querySelectorAll('.instrument-card').forEach((c) => c.classList.remove('active'));
     card.classList.add('active');
-    soundInstrument.setInstrument(instrument);
-    updateStatus(`Instrumento seleccionado: ${card.querySelector('.instrument-name').textContent}`);
+    const name = card.querySelector('.instrument-name');
+    updateStatus(`Instrumento seleccionado: ${name ? name.textContent : instrument}`);
 }
 
 function toggleRecording() {
@@ -225,8 +321,13 @@ function toggleRecording() {
 }
 
 function clearAll() {
-    if (soundInstrument) {
-        soundInstrument.stopAllSounds();
+    try {
+        if (soundInstrument) {
+            soundInstrument.stopAllSounds();
+        }
+    } catch (error) {
+        reportError('clearAll', error, 'Error al limpiar los sonidos. Revisa la consola.');
+        return;
     }
     updateStatus('Todo limpiado. Listo para nueva magia.');
 }
@@ -237,26 +338,46 @@ function setupUIEvents() {
         if (index === 0) card.classList.add('active');
     });
 
-    volumeControl.addEventListener('input', (e) => {
-        const value = Number(e.target.value);
-        soundInstrument.setVolume(value);
-        document.getElementById('volume-value').textContent = `${value}%`;
-    });
+    if (volumeControl) {
+        volumeControl.addEventListener('input', (e) => {
+            const value = Number(e.target.value);
+            if (soundInstrument) {
+                try {
+                    soundInstrument.setVolume(value);
+                } catch (error) {
+                    reportError('setVolume', error, 'Error: volumen invalido.');
+                    return;
+                }
+            }
+            const display = document.getElementById('volume-value');
+            if (display) display.textContent = `${value}%`;
+        });
+    }
 
-    sensitivityControl.addEventListener('input', (e) => {
-        const value = Number(e.target.value);
-        gestureCooldown = 1100 - value * 100;
-        document.getElementById('sensitivity-value').textContent = `${value}`;
-    });
+    if (sensitivityControl) {
+        sensitivityControl.addEventListener('input', (e) => {
+            const value = Number(e.target.value);
+            gestureCooldown = 1100 - value * 100;
+            const display = document.getElementById('sensitivity-value');
+            if (display) display.textContent = `${value}`;
+        });
+    }
 
-    effectsControl.addEventListener('change', (e) => {
-        updateStatus(`Efecto seleccionado: ${e.target.options[e.target.selectedIndex].text}`);
-    });
+    if (effectsControl) {
+        effectsControl.addEventListener('change', (e) => {
+            const option = e.target.options[e.target.selectedIndex];
+            updateStatus(`Efecto seleccionado: ${option ? option.text : e.target.value}`);
+        });
+    }
 
-    startBtn.addEventListener('click', startCamera);
+    startBtn.addEventListener('click', () => {
+        startCamera().catch((error) => {
+            reportError('startCamera', error, 'Error inesperado al iniciar la cámara.');
+        });
+    });
     stopBtn.addEventListener('click', stopCamera);
-    recordBtn.addEventListener('click', toggleRecording);
-    clearBtn.addEventListener('click', clearAll);
+    if (recordBtn) recordBtn.addEventListener('click', toggleRecording);
+    if (clearBtn) clearBtn.addEventListener('click', clearAll);
 }
 
 if (typeof HAND_CONNECTIONS === 'undefined') {
@@ -285,12 +406,34 @@ if (typeof HAND_CONNECTIONS === 'undefined') {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!cameraElement || !outputElement || !startBtn || !stopBtn) return;
+    if (!cameraElement || !outputElement || !startBtn || !stopBtn) {
+        reportError(
+            'init',
+            new Error('Faltan elementos requeridos en el DOM (video, canvas o botones).'),
+            'Error: la pagina no se cargo correctamente.'
+        );
+        return;
+    }
 
-    soundInstrument = new SoundInstrument();
-    soundInstrument.setVolume(Number(volumeControl.value));
-    initializeHands();
+    try {
+        soundInstrument = new SoundInstrument();
+        if (volumeControl) {
+            soundInstrument.setVolume(Number(volumeControl.value));
+        }
+    } catch (error) {
+        reportError('init:audio', error, 'Error: no se pudo iniciar el motor de audio.');
+    }
+
+    try {
+        initializeHands();
+    } catch (error) {
+        startBtn.disabled = true;
+        reportError('init:hands', error, `Error: no se pudo iniciar la deteccion de manos (${error.message}).`);
+    }
+
     setupUIEvents();
     setCameraIndicator(false);
-    updateStatus("Listo para comenzar. Haz clic en 'Iniciar Cámara'.");
+    if (hands) {
+        updateStatus("Listo para comenzar. Haz clic en 'Iniciar Cámara'.");
+    }
 });
