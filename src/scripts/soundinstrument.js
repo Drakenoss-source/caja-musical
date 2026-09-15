@@ -1,3 +1,5 @@
+const soundUtils = window.MagicSoundUtils;
+
 class SoundInstrument {
     constructor() {
         this.currentInstrument = 'piano';
@@ -117,11 +119,11 @@ class SoundInstrument {
     }
 
     setVolume(volumeValue) {
-        const normalized = Number(volumeValue) / 100;
+        const normalized = soundUtils.normalizePercentage(volumeValue);
         if (!Number.isFinite(normalized)) {
             throw new TypeError(`Volumen invalido: ${volumeValue}`);
         }
-        this.volume = Math.max(0, Math.min(1, normalized));
+        this.volume = normalized;
     }
 
     setInstrument(instrumentName) {
@@ -147,7 +149,7 @@ class SoundInstrument {
         const volume = typeof volumeOverride === 'number' && Number.isFinite(volumeOverride)
             ? volumeOverride
             : this.volume;
-        const safeVolume = Math.max(0, Math.min(1, volume));
+        const safeVolume = soundUtils.clamp(volume, 0, 1);
         const now = this.audioContext.currentTime;
         const step = 0.09;
         const duration = 0.2;

@@ -9,6 +9,8 @@ const effectsControl = document.getElementById('effects');
 const recordBtn = document.getElementById('record-btn');
 const clearBtn = document.getElementById('clear-btn');
 const cameraStatus = document.getElementById('camera-status');
+const appUtils = window.MagicSoundUtils;
+const fingerTips = [8, 12, 16, 20];
 
 let soundInstrument = null;
 const ctx = outputElement ? outputElement.getContext('2d') : null;
@@ -107,7 +109,9 @@ function detectGesture(landmarks, handIndex) {
     else if (isPointing(landmarks)) gesture = 'pointing';
 
     if (gesture && gesture !== lastGestures[handKey].gesture && soundInstrument) {
-        const volume = volumeControl ? Number(volumeControl.value) / 100 : undefined;
+        const volume = volumeControl
+            ? appUtils.normalizePercentage(volumeControl.value)
+            : undefined;
         try {
             soundInstrument.playNote(gesture, volume);
         } catch (error) {
@@ -124,53 +128,31 @@ function detectGesture(landmarks, handIndex) {
 }
 
 function isFist(landmarks) {
-    const fingerTips = [8, 12, 16, 20];
-    const wrist = landmarks[0];
-    return fingerTips.every((tipIndex) => distance(landmarks[tipIndex], wrist) <= 0.2);
+    return appUtils.areLandmarksWithinDistance(landmarks, fingerTips, 0.2);
 }
 
 function isOpenHand(landmarks) {
-    const fingerTips = [8, 12, 16, 20];
-    const wrist = landmarks[0];
-    return fingerTips.every((tipIndex) => distance(landmarks[tipIndex], wrist) >= 0.3);
+    return appUtils.areLandmarksBeyondDistance(landmarks, fingerTips, 0.3);
 }
 
 function isPeaceSign(landmarks) {
-    const wrist = landmarks[0];
     return (
-        distance(landmarks[8], wrist) > 0.3 &&
-        distance(landmarks[12], wrist) > 0.3 &&
-        distance(landmarks[16], wrist) < 0.2 &&
-        distance(landmarks[20], wrist) < 0.2
+        appUtils.areLandmarksBeyondDistance(landmarks, [8, 12], 0.3, false) &&
+        appUtils.areLandmarksWithinDistance(landmarks, [16, 20], 0.2, false)
     );
 }
 
 function isThumbsUp(landmarks) {
-    const wrist = landmarks[0];
     return (
-        distance(landmarks[4], wrist) > 0.3 &&
-        distance(landmarks[8], wrist) < 0.2 &&
-        distance(landmarks[12], wrist) < 0.2 &&
-        distance(landmarks[16], wrist) < 0.2 &&
-        distance(landmarks[20], wrist) < 0.2
+        appUtils.areLandmarksBeyondDistance(landmarks, [4], 0.3, false) &&
+        appUtils.areLandmarksWithinDistance(landmarks, fingerTips, 0.2, false)
     );
 }
 
 function isPointing(landmarks) {
-    const wrist = landmarks[0];
     return (
-        distance(landmarks[8], wrist) > 0.3 &&
-        distance(landmarks[12], wrist) < 0.2 &&
-        distance(landmarks[16], wrist) < 0.2 &&
-        distance(landmarks[20], wrist) < 0.2
-    );
-}
-
-function distance(point1, point2) {
-    return Math.sqrt(
-        Math.pow(point1.x - point2.x, 2) +
-            Math.pow(point1.y - point2.y, 2) +
-            Math.pow(point1.z - point2.z, 2)
+        appUtils.areLandmarksBeyondDistance(landmarks, [8], 0.3, false) &&
+        appUtils.areLandmarksWithinDistance(landmarks, [12, 16, 20], 0.2, false)
     );
 }
 
@@ -338,30 +320,26 @@ function setupUIEvents() {
         if (index === 0) card.classList.add('active');
     });
 
-    if (volumeControl) {
-        volumeControl.addEventListener('input', (e) => {
-            const value = Number(e.target.value);
+    appUtils.bindNumericInput(volumeControl, document.getElementById('volume-value'), {
+        formatValue: (value) => `${value}%`,
+        onChange: (value) => {
             if (soundInstrument) {
                 try {
                     soundInstrument.setVolume(value);
                 } catch (error) {
                     reportError('setVolume', error, 'Error: volumen invalido.');
-                    return;
+                    return false;
                 }
             }
-            const display = document.getElementById('volume-value');
-            if (display) display.textContent = `${value}%`;
-        });
-    }
+            return true;
+        }
+    });
 
-    if (sensitivityControl) {
-        sensitivityControl.addEventListener('input', (e) => {
-            const value = Number(e.target.value);
+    appUtils.bindNumericInput(sensitivityControl, document.getElementById('sensitivity-value'), {
+        onChange: (value) => {
             gestureCooldown = 1100 - value * 100;
-            const display = document.getElementById('sensitivity-value');
-            if (display) display.textContent = `${value}`;
-        });
-    }
+        }
+    });
 
     if (effectsControl) {
         effectsControl.addEventListener('change', (e) => {
